@@ -45,6 +45,7 @@ const baseSchema = {
     missing: { type: "array", items: { type: "string" } },
     sources: { type: "array", items: { type: "string" } },
     notes: { type: "string" },
+    confidence: { type: "string" }, // persona-mandated field (deep-research-agent)
   },
   required: ["item", "json"],
 };
@@ -57,6 +58,7 @@ const gapSchema = {
     uncertain: { type: "array", items: { type: "string" } },
     missing: { type: "array", items: { type: "string" } },
     sources: { type: "array", items: { type: "string" } },
+    confidence: { type: "string" }, // persona-mandated field (deep-research-agent)
   },
   required: ["item", "json"],
 };
@@ -136,8 +138,9 @@ const results = await parallel(
   batch.map(function (item) {
     return async function () {
       phase("round-1");
-      const r1 = await agent(round1Prompt(item), { label: item.slug + "-r1", schema: baseSchema });
-      if (r1 === null) return { item: item.slug, failed: true, reason: "round-1 research agent failed" };
+      const slug = item.slug || item.name || "item";
+      const r1 = await agent(round1Prompt(item), { label: slug + "-r1", schema: baseSchema });
+      if (r1 === null) return { item: slug, failed: true, reason: "round-1 research agent failed" };
 
       let json = r1.json || {};
       let uncertain = Array.isArray(r1.uncertain) ? r1.uncertain : [];
@@ -147,7 +150,7 @@ const results = await parallel(
 
       if (maxRounds >= 2 && (missing.length > 0 || uncertain.length > 0)) {
         phase("round-2");
-        const r2 = await agent(round2Prompt(item, missing, uncertain), { label: item.slug + "-r2", schema: gapSchema });
+        const r2 = await agent(round2Prompt(item, missing, uncertain), { label: slug + "-r2", schema: gapSchema });
         if (r2 !== null) {
           json = mergeDeep(json, r2.json || {});
           uncertain = Array.isArray(r2.uncertain) ? r2.uncertain : uncertain;
@@ -160,15 +163,15 @@ const results = await parallel(
       let verification = null;
       if (doVerify) {
         phase("verify");
-        const rv = await agent(verifyPrompt(item, json, sources), { label: item.slug + "-verify", schema: verifySchema });
+        const rv = await agent(verifyPrompt(item, json, sources), { label: slug + "-verify", schema: verifySchema });
         if (rv !== null) {
           if (rv.json) json = mergeDeep(json, rv.json);
           verification = rv.verification || null;
         }
       }
 
-      log(item.slug + ": rounds=" + roundsUsed + ", uncertain=" + uncertain.length + ", missing=" + missing.length + ", sources=" + sources.length);
-      return { item: item.slug, ok: true, roundsUsed: roundsUsed, json: json, uncertain: uncertain, missing: missing, sources: sources, verification: verification };
+      log(slug + ": rounds=" + roundsUsed + ", uncertain=" + uncertain.length + ", missing=" + missing.length + ", sources=" + sources.length);
+      return { item: slug, ok: true, roundsUsed: roundsUsed, json: json, uncertain: uncertain, missing: missing, sources: sources, verification: verification };
     };
   })
 );
