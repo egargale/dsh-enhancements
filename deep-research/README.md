@@ -62,16 +62,13 @@ Upgrades implemented after researching agentic deep-research architectures (STOR
 ### 1. Install / re-sync the skills
 
 ```bash
-# from this repo
-bash dsh-enhancements/sync-skills.sh            # install or refresh everything
-bash dsh-enhancements/sync-skills.sh --dry-run  # preview first
-bash dsh-enhancements/sync-skills.sh --deep     # only the deep-research set
-bash dsh-enhancements/sync-skills.sh --matt     # only the Matt Pocock shadows
+# the sync script lives at ~/sync-skills.sh (no longer shipped in this repo)
+bash ~/sync-skills.sh            # install or refresh everything
+bash ~/sync-skills.sh --dry-run  # preview first
+bash ~/sync-skills.sh --deep     # only the deep-research set
 ```
 
-The script installs the six deep-research skills into `~/.dsh/skills/` (verbatim) and
-re-creates the thirteen Matt Pocock shadows from `~/.agents/skills/` with the
-`disable-model-invocation: true` marker stripped — the originals stay untouched.
+The script installs the six deep-research skills into `~/.dsh/skills/` (verbatim).
 
 Manual equivalent:
 
@@ -111,8 +108,6 @@ change takes effect on the next tool call). If it doesn't for your build, restar
 ```bash
 # skills present?
 ls ~/.dsh/skills | sort
-# no leftover model-invocation markers?
-grep -l '^disable-model-invocation:' ~/.dsh/skills/*/SKILL.md || echo none
 ```
 
 In the web UI, start a new session: all six skills appear in the
@@ -161,14 +156,13 @@ Each batch runs the `workflow` tool with `deep-research.workflow.js`:
 - `research-deep/SKILL.md`, `research-deep/deep-research.workflow.js`
 - `research-report/SKILL.md`
 - `deep-research-agent/SKILL.md`
-- `../sync-skills.sh` — the install/re-sync script
 
 ## Maintenance & drift
 
 This is a **fork** of the upstream workflow, so upstream updates do not propagate.
-After pulling new versions of the source skills (or of Matt's skills via
-`npx skills update`), re-run `bash dsh-enhancements/sync-skills.sh` to refresh
-`~/.dsh/skills/`. The script is idempotent and only manages the known skill dirs.
+After pulling new versions of the source skills, re-run `bash ~/sync-skills.sh`
+(or the manual copy above) to refresh `~/.dsh/skills/`. The script is idempotent
+and only manages the known skill dirs.
 
 ## Troubleshooting
 
