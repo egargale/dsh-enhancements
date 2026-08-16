@@ -213,3 +213,10 @@ Setup step 1 to refresh the skills.
 | `workflow` tool unavailable | Use the manual background-subagent fallback in `research-deep` |
 | Validation fails (missing required fields) | Re-run the failing items (`research-deep` skips completed ones) |
 | Low confidence / conflicts in the report | Expected — that is the verification pass working; re-run flagged items or inspect the conflict notes |
+
+## License
+
+MIT — see [LICENSE](../LICENSE). This workflow is a fork/adaptation of
+[Weizhena/Deep-Research-skills](https://github.com/Weizhena/Deep-Research-skills),
+which is MIT-licensed (© 2026 Lan Zheng); the upstream copyright notice is
+retained as required by the MIT license.
