@@ -83,15 +83,40 @@ rm /tmp/anysearch-skill.zip
 
 ### 1. Install / re-sync the skills
 
+**Preferred — via the `skills` CLI (`npx skills`), no clone needed:**
+
 ```bash
-# from this repo
-cd deep-research
+# preview what this repo contains
+npx skills add egargale/dsh-enhancements --list
+
+# install all six deep-research skills, global scope, non-interactive
+npx skills add egargale/dsh-enhancements --skill '*' -g -a cline -y
+```
+
+The CLI discovers the six skills in this repo (`research`, `research-add-items`,
+`research-add-fields`, `research-deep`, `research-report`, `deep-research-agent`).
+DSH is not yet one of the CLI's built-in agent targets, so `-a` picks an agent
+whose global path is the shared `~/.agents/skills/` home (`cline`, `dexto`,
+`warp` and `zed` all map there — any of them work; files are copied, not
+symlinked). DSH picks the skills up from that shared home (the `DSH_AGENTS_HOME`
+default). If your DSH profile reads skills from `~/.dsh/skills/` instead, copy
+them over:
+
+```bash
+cp -R ~/.agents/skills/{research,research-add-items,research-add-fields,research-deep,research-report,deep-research-agent} ~/.dsh/skills/
+```
+
+**Fallback — manual copy from a checkout:**
+
+```bash
+git clone https://github.com/egargale/dsh-enhancements.git
+cd dsh-enhancements/deep-research
 mkdir -p ~/.dsh/skills
 cp -R research research-add-items research-add-fields research-deep research-report deep-research-agent ~/.dsh/skills/
 ```
 
-The six deep-research skills are copied verbatim into `~/.dsh/skills/`. Re-run
-the same copy after pulling new versions of the source skills to refresh them.
+Re-run the chosen command after pulling new versions of the source skills to
+refresh them.
 
 ### 2. Raise the 600-second tool ceiling (recommended for multi-item runs)
 
@@ -176,8 +201,8 @@ Each batch runs the `workflow` tool with `deep-research.workflow.js`:
 ## Maintenance & drift
 
 This is a **fork** of the upstream workflow, so upstream updates do not propagate.
-After pulling new versions of the source skills, re-run the copy command in
-Setup step 1 to refresh `~/.dsh/skills/`.
+After pulling new versions of the source skills, re-run the install command in
+Setup step 1 to refresh the skills.
 
 ## Troubleshooting
 
