@@ -57,7 +57,29 @@ Upgrades implemented after researching agentic deep-research architectures (STOR
 
 - A running DSH **web profile** (`dsh web` or `dsh --profile web`) with the `dsh-base` bundle (ships the `workflow` tool, background subagents, `web_search`, and the skill system).
 - `python3` + PyYAML (for `validate_json.py` and the generated report script).
-- The **anysearch skill** (optional — the primary search engine; `web_search` is the built-in fallback).
+- The **anysearch skill** (optional — the primary search engine; `web_search` is the built-in fallback). Install it from [anysearch-ai/anysearch-skill](https://github.com/anysearch-ai/anysearch-skill) — see [Optional: install the anysearch skill](#optional-install-the-anysearch-skill) below.
+
+### Optional: install the anysearch skill
+
+The primary search engine is the **anysearch skill** from
+[anysearch-ai/anysearch-skill](https://github.com/anysearch-ai/anysearch-skill) (Apache-2.0).
+The workflow falls back to the built-in DSH `web_search` when the anysearch tools
+are unavailable, so this step is optional but recommended.
+
+```bash
+# latest release: https://github.com/anysearch-ai/anysearch-skill/releases
+curl -L -o /tmp/anysearch-skill.zip https://github.com/anysearch-ai/anysearch-skill/archive/refs/tags/v2.1.0.zip
+unzip -q /tmp/anysearch-skill.zip -d /tmp/
+mkdir -p ~/.agents/skills
+mv /tmp/anysearch-skill-* ~/.agents/skills/anysearch   # zip root is anysearch-skill-<ref>
+rm /tmp/anysearch-skill.zip
+# if your DSH profile reads skills from ~/.dsh/skills (see Setup step 1), also:
+# cp -R ~/.agents/skills/anysearch ~/.dsh/skills/
+```
+
+- Requires Python 3.6+ with `requests` (`pip install requests` or `pip install -r requirements.txt`); a dependency-free Node.js CLI is also bundled.
+- Set `ANYSEARCH_API_KEY` in `.env` or the environment for higher rate limits (anonymous access works with lower limits).
+- The free tier has a **daily quota** — when exhausted, children automatically fall back to `web_search`.
 
 ### 1. Install / re-sync the skills
 
@@ -132,7 +154,7 @@ Each batch runs the `workflow` tool with `deep-research.workflow.js`:
 
 ## Search engine
 
-- **Primary — AnySearch (anysearch skill)**: `search` / `batch_search` / `extract`; vertical routing via `get_sub_domains` for academic / finance / legal / health / code / business, etc.
+- **Primary — AnySearch (anysearch skill, [anysearch-ai/anysearch-skill](https://github.com/anysearch-ai/anysearch-skill))**: `search` / `batch_search` / `extract`; vertical routing via `get_sub_domains` for academic / finance / legal / health / code / business, etc.
 - **Fallback — DSH `web_search`** (DeepSeek native search): used automatically when the anysearch tools are unavailable in a child's context; each search costs a model turn.
 - Note: the AnySearch free tier has a **daily quota** — when exhausted, children automatically fall back to `web_search` + direct page fetches (verification notes will say so).
 
@@ -140,7 +162,7 @@ Each batch runs the `workflow` tool with `deep-research.workflow.js`:
 
 - `python3` + PyYAML.
 - `workflow` tool + background subagents (in `dsh-base`). If `workflow` is unavailable, `research-deep` falls back to manual background-subagent batches.
-- Optional: anysearch skill (primary engine) and network access to `api.anysearch.com` / `api.deepseek.com`.
+- Optional: the [anysearch skill](https://github.com/anysearch-ai/anysearch-skill) (primary engine, see [install](#optional-install-the-anysearch-skill)) and network access to `api.anysearch.com` / `api.deepseek.com`.
 
 ## Files
 
