@@ -62,20 +62,14 @@ Upgrades implemented after researching agentic deep-research architectures (STOR
 ### 1. Install / re-sync the skills
 
 ```bash
-# the sync script lives at ~/sync-skills.sh (no longer shipped in this repo)
-bash ~/sync-skills.sh            # install or refresh everything
-bash ~/sync-skills.sh --dry-run  # preview first
-bash ~/sync-skills.sh --deep     # only the deep-research set
-```
-
-The script installs the six deep-research skills into `~/.dsh/skills/` (verbatim).
-
-Manual equivalent:
-
-```bash
+# from this repo
+cd deep-research
 mkdir -p ~/.dsh/skills
 cp -R research research-add-items research-add-fields research-deep research-report deep-research-agent ~/.dsh/skills/
 ```
+
+The six deep-research skills are copied verbatim into `~/.dsh/skills/`. Re-run
+the same copy after pulling new versions of the source skills to refresh them.
 
 ### 2. Raise the 600-second tool ceiling (recommended for multi-item runs)
 
@@ -160,9 +154,8 @@ Each batch runs the `workflow` tool with `deep-research.workflow.js`:
 ## Maintenance & drift
 
 This is a **fork** of the upstream workflow, so upstream updates do not propagate.
-After pulling new versions of the source skills, re-run `bash ~/sync-skills.sh`
-(or the manual copy above) to refresh `~/.dsh/skills/`. The script is idempotent
-and only manages the known skill dirs.
+After pulling new versions of the source skills, re-run the copy command in
+Setup step 1 to refresh `~/.dsh/skills/`.
 
 ## Troubleshooting
 
