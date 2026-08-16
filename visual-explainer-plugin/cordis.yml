@@ -1,0 +1,12 @@
+# Web overlay that mounts the visual-explainer-plugin.
+# Use from a DSH source checkout (run-from-source path):
+#
+#   pnpm dsh web --patch /absolute/path/to/dsh-enhancements/visual-explainer-plugin/cordis.yml
+#
+# The plugin path must be absolute. The server-side tool registers on the
+# built-in tool registry; the client-side chat node must additionally be
+# composed into the Web bundle (see README.md, "Mounting the client node").
+- insert:
+    - id: visual-explainer-plugin
+      name: '/absolute/path/to/dsh-enhancements/visual-explainer-plugin/src/index.ts'
+
