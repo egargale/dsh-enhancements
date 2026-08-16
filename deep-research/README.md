@@ -195,7 +195,7 @@ Each batch runs the `workflow` tool with `deep-research.workflow.js`:
 - `research-add-items/SKILL.md`
 - `research-add-fields/SKILL.md`
 - `research-deep/SKILL.md`, `research-deep/deep-research.workflow.js`
-- `research-report/SKILL.md`
+- `research-report/SKILL.md`, `research-report/generate_report.py`
 - `deep-research-agent/SKILL.md`
 
 ## Maintenance & drift

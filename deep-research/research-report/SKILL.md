@@ -21,8 +21,8 @@ Use `ask_user_question` to ask the user:
 - Which fields to display in the TOC and comparison table besides the item name?
 - Provide dynamic options built from the actual fields found in the JSONs.
 
-### Step 3 — Generate the report script
-Generate `generate_report.py` in `{topic}/` (with the `write` tool) with these requirements:
+### Step 3 — Use the shipped report script
+The conversion script ships with this skill — `generate_report.py` in **this skill's directory** (find it relative to the skill base directory via `glob`). Copy it into `{topic}/` (or run it directly from the skill dir, passing the results directory). The script implements:
 - Read all JSON from the output_dir, fields.yaml, and verification metadata (`*.verification.json` when present).
 - Cover every field value from each JSON; skip fields whose value contains `[uncertain]` or that are listed in the item's `uncertain` array.
 - Support BOTH flat JSON (fields at top level) and nested JSON (fields grouped under category dicts). Field lookup order: top level -> category mapping key -> traverse nested dicts.
@@ -47,7 +47,11 @@ CATEGORY_MAPPING = {
   5. **Uncertainty & confidence summary**: per item — uncertain fields, `[uncertain]` values, verification confidence (high/medium/low) and conflicts.
 
 ### Step 4 — Run and deliver
-Run the script with `python3 {topic}/generate_report.py`. Confirm `{topic}/report.md` was produced; show the user a preview.
+Run the script (from `{topic}/`, or point it at the results dir):
+```
+python3 {topic}/generate_report.py --summary-fields <f1,f2,...>
+```
+Omit `--summary-fields` to auto-detect fields present across items. Confirm `{topic}/report.md` was produced; show the user a preview.
 
 ## Output
 `{topic}/report.md`
