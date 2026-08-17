@@ -8,4 +8,4 @@ Enhancements for [DeepSeek Harness (DSH)](https://github.com/deepseek-ai/deepsee
 
 ## License
 
-MIT — see [LICENSE](LICENSE). Adapted from [Weizhena/Deep-Research-skills](https://github.com/Weizhena/Deep-Research-skills), which is MIT-licensed (© 2026 Lan Zheng), and ported from [nicobailon/visual-explainer](https://github.com/nicobailon/visual-explainer), which is MIT-licensed (© 2025 Nico Bailon); the upstream copyright notices are retained as required by the MIT license.
+MIT — see [LICENSE](LICENSE). Adapted from [Weizhena/Deep-Research-skills](https://github.com/Weizhena/Deep-Research-skills), which is MIT-licensed (© 2026 Lan Zheng), and ported from [nicobailon/visual-explainer](https://github.com/nicobailon/visual-explainer), which is MIT-licensed (© 2025 Nico Bailon); the upstream copyright notices are retained as required by the MIT license. The visual-explainer port additionally ships the upstream MIT text verbatim as a sub-license at `visual-explainer/LICENSE` and `visual-explainer-plugin/LICENSE`.

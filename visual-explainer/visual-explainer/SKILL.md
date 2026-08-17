@@ -153,3 +153,7 @@ Before delivery, verify:
 - styling would still be recognizable if compared against a generic dark/violet template;
 - the file path was reported in chat (DSH cannot open browsers for you);
 - if requested, the Markdown companion is a concise source brief that matches the delivered HTML without becoming its source of truth.
+
+## Attribution
+
+Upstream: [nicobailon/visual-explainer](https://github.com/nicobailon/visual-explainer) by Nico Bailon — MIT © 2025 (license text retained in the skill repository at `visual-explainer/LICENSE`). This skill is a DeepSeek Harness port; the upstream copyright notice is preserved as required by the MIT license.

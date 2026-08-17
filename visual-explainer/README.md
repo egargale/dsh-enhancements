@@ -4,6 +4,12 @@ A complete, DSH-native port of [nicobailon/visual-explainer](https://github.com/
 
 Instead of ASCII art and box-drawing tables, the agent generates a single `.html` file with real typography, dark/light themes, and interactive Mermaid diagrams (zoom, pan, expand) — no build step, no dependencies beyond a browser.
 
+## Author & attribution
+
+- **Upstream author:** [Nico Bailon](https://github.com/nicobailon) — [nicobailon/visual-explainer](https://github.com/nicobailon/visual-explainer), MIT © 2025. This folder is a port of that skill, not an official fork.
+- **Port author:** Enrico Gargale (`egargale`) — DSH-native adaptation (workflow, delivery, tooling).
+- **Licensing:** the upstream MIT license is preserved verbatim in [`./LICENSE`](LICENSE) — a sub-license covering the ported material, as required by the MIT license. MIT ↔ MIT is fully compatible: the port adds no restrictions. This repo's own additions are covered by the repository-level [LICENSE](../LICENSE).
+
 ## Features
 
 - **One core skill + seven command skills** — `visual-explainer` (the workflow engine, model-invocable) plus `/generate-web-diagram`, `/generate-visual-plan`, `/generate-slides`, `/diff-review`, `/plan-review`, `/project-recap`, `/fact-check` as user-invocable composer commands.
@@ -135,5 +141,5 @@ This is a **port** of the upstream skill, so upstream updates do not propagate a
 
 ## License
 
-MIT — see [LICENSE](../LICENSE). Ported from [nicobailon/visual-explainer](https://github.com/nicobailon/visual-explainer), which is MIT-licensed (© 2025 Nico Bailon); the upstream copyright notice is retained as required by the MIT license.
+Ported from [nicobailon/visual-explainer](https://github.com/nicobailon/visual-explainer) by Nico Bailon, MIT © 2025 — the upstream license text is kept verbatim in [`./LICENSE`](LICENSE) as required by the MIT license (MIT/MIT compatible; see [Author & attribution](#author--attribution)). The repository-level [LICENSE](../LICENSE) covers this folder's DSH-specific additions.
 

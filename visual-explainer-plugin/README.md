@@ -86,5 +86,5 @@ The chat node is a client plugin and must be **composed into the Web bundle** �
 
 ## License
 
-MIT — see [LICENSE](../LICENSE). Ported from [nicobailon/visual-explainer](https://github.com/nicobailon/visual-explainer), MIT (© 2025 Nico Bailon).
+Ported from [nicobailon/visual-explainer](https://github.com/nicobailon/visual-explainer) by Nico Bailon, MIT © 2025 — the upstream license text is kept verbatim in [`./LICENSE`](LICENSE) as required by the MIT license (MIT/MIT compatible). The repository-level [LICENSE](../LICENSE) covers this plugin's original scaffold code.
 
