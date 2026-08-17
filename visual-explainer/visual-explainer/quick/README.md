@@ -10,7 +10,7 @@ Quick mode is opt-in. Use it only for `/generate-web-diagram --quick`, `/diff-re
 
 **Otherwise** save the spec as JSON and run the local renderer:
 
-1. Write the spec with the `write` tool to `<output-dir>/.<name>.spec.json` (default output dir `./diagrams/`).
+1. Write the spec with `tools.write({ file_path: '<output-dir>/.<name>.spec.json', content: specJson })` from inside a `run_code` program (default output dir `./diagrams/`).
 2. Run via `bash`:
 
 ```bash

@@ -43,7 +43,7 @@ All are **model-invocable** (appear in the session skill catalog) and **user-inv
 | `~/.agent/diagrams/` output dir | `./diagrams/` in the session workspace (sandbox-friendly; honored by the `write` tool) |
 | `open` / browser launch after render | No browser auto-open in DSH — the agent reports the file path in chat; pages are self-contained and openable anywhere |
 | Slash commands via Claude Code `commands/` | User-invocable skills (`/diff-review` … in the DSH composer), each loading the core skill first |
-| Pi `visual_explainer.prepare/render` tool | The `write` tool + the skill workflow (no harness-specific render API) |
+| Pi `visual_explainer.prepare/render` tool | The `write` tool + the skill workflow (no harness-specific render API) — in DSH Code Mode all tools are called as `tools.<name>({...})` inside a `run_code` program |
 | Pi `render_quick` action | `quick/render.mjs` via `bash` (needs `node`), or the optional `visual_explainer_render_quick` plugin tool when installed |
 | surf-cli + Gemini image generation | **Not ported** — DSH has no bundled image generation; slides/pages degrade to CSS gradients + inline SVG (never error) |
 | MCP server (`mcp/server.mjs`) | **Not ported** — DSH's native `skill` + `write` tools replace the render-tool interface; see [visual-explainer-plugin](../visual-explainer-plugin) for the deterministic-render alternative |
@@ -138,6 +138,7 @@ This is a **port** of the upstream skill, so upstream updates do not propagate a
 | PPTX export fails | Install `node-html-parser` + `pptxgenjs` into a scratch dir (see `pptx/README.md`) and run from there; otherwise the HTML deck is the deliverable |
 | Mermaid diagram doesn't render | Check the `diagram-shell` pattern and `theme: 'base'` + `themeVariables`; bare `<pre class="mermaid">` is forbidden |
 | Skills don't appear in the catalog | Confirm the eight directories are directly under the skills root (nested `**/SKILL.md` discovery is not supported) |
+| Tool errors `unknown tool "write"` / `only \`run_code\` is callable directly` | DSH Code Mode: only `run_code` is callable directly — every tool call must be `tools.<name>({...})` inside a `run_code` program. The skill text now uses that form; a bare `write(...)` fails even though the tool exists (harmless if the agent retries correctly, but it costs a model turn) |
 
 ## License
 

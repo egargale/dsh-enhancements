@@ -17,7 +17,7 @@ Generate self-contained HTML pages that explain systems, code changes, plans, da
 
 - Prefer an HTML page over terminal ASCII when the output is inherently visual.
 - If a table would have 4+ rows or 3+ columns, render it as HTML and give only a short chat summary.
-- **Output location (DSH):** write files to `./diagrams/` relative to the session working directory (or the explicit path the user gives). Use descriptive filenames, e.g. `diff-review-auth-flow.html`. The `write` tool creates parent directories; if a directory is missing, create it with `mkdir -p` via `bash` when the write fails.
+- **Output location (DSH):** write files to `./diagrams/` relative to the session working directory (or the explicit path the user gives). Use descriptive filenames, e.g. `diff-review-auth-flow.html`. `tools.write` (inside `run_code`) creates parent directories; if a directory is missing, create it first with `tools.bash({ command: 'mkdir -p …' })`.
 - **Delivery (DSH):** DSH runs inside a sandboxed workspace and cannot open a browser on your behalf. After writing, report the file's path in chat (absolute or workspace-relative) and one line on what the page contains. The user opens the file locally; the page must stand alone.
 - Generate a Markdown companion only when the user explicitly asks for AI-readable output or a source brief. Keep HTML as the final visual output; Markdown is a companion, never the source for HTML. Write `<name>.md` beside `<name>.html` when possible, and ask before replacing an existing companion file.
 - The final page must be a complete self-contained HTML document: embedded CSS, a self-contained favicon, and any needed JS. No external files, no build step.
@@ -40,7 +40,25 @@ The argument the user typed after the command name is `$@` inside the template. 
 
 ## Working with this skill's files (DSH)
 
-All relative paths in this skill (`./references/...`, `./templates/...`, `./commands/...`, `./quick/...`, `./pptx/...`) resolve against **this skill's base directory**, reported by the `skill` tool as `resourceBase` (kind: directory). Read reference and template files with the `read` tool before generating — don't memorize them, read them fresh each time. If you need to locate them, use `glob` from the base directory.
+All relative paths in this skill (`./references/...`, `./templates/...`, `./commands/...`, `./quick/...`, `./pptx/...`) resolve against **this skill's base directory**, reported by the `skill` tool as `resourceBase` (kind: directory). Read reference and template files before generating — don't memorize them, read them fresh each time. If you need to locate them, use `glob` from the base directory.
+
+## DSH tool invocation (Code Mode) — read first
+
+DSH runs agents in **Code Mode**: the only tool the model may call directly is `run_code`. Every other tool (`write`, `edit`, `read`, `bash`, `glob`, `grep`, `skill`, …) is reached as `await tools.<name>({...})` **from inside a `run_code` program**. A bare top-level call such as `write(...)` is rejected with:
+
+```
+Error: unknown tool "write": only `run_code` is callable directly — call `write` from inside a `run_code` program instead.
+```
+
+That message means the tool exists but was called on the wrong surface — retry the same operation in the `tools.*` form. Every bare-call failure costs a model turn, so use the `tools.*` form on the first attempt:
+
+```js
+await tools.write({ file_path: './diagrams/auth-flow.html', content: '<!doctype html>…' })
+await tools.bash({ command: 'mkdir -p diagrams && git diff --stat main', description: '…' })
+await tools.read({ file_path: '<skill-dir>/templates/mermaid-flowchart.html' })
+```
+
+If a `tools.*` call still fails, fall back to a `bash` heredoc (`cat > file <<'EOF'`) or plain `tools.bash` for the same operation.
 
 ## Quick mode
 
@@ -49,7 +67,7 @@ Quick mode is opt-in. Use it only when `--quick` appears on `/generate-web-diagr
 For quick mode, read `./quick/README.md` and `./quick/schema.json`. Gather and verify the same source facts as full mode, but emit the compact JSON spec. In DSH:
 
 1. Compose the spec JSON.
-2. **If the optional `visual-explainer-plugin` is installed**, call the `visual_explainer_render_quick` tool with the spec, a descriptive filename, and an optional output directory (default `./diagrams/`) — it validates, renders, and writes the HTML deterministically. **Otherwise**, write the spec with the `write` tool to `<output-dir>/.<name>.spec.json` and run `node <skill-dir>/quick/render.mjs <spec.json> <output.html>` via `bash` (`<skill-dir>` is this skill's base directory).
+2. **If the optional `visual-explainer-plugin` is installed**, call the `visual_explainer_render_quick` tool with the spec, a descriptive filename, and an optional output directory (default `./diagrams/`) — it validates, renders, and writes the HTML deterministically. **Otherwise**, write the spec with `tools.write({ file_path: '<output-dir>/.<name>.spec.json', content: … })` (inside `run_code`) and run `node <skill-dir>/quick/render.mjs <spec.json> <output.html>` via `tools.bash(...)` (`<skill-dir>` is this skill's base directory).
 3. Remove the temporary spec file after a successful render (unless the user wants it kept), then report the HTML path.
 
 If the plugin tool is absent, `node` is unavailable, the spec does not validate, or rendering errors, fall back to the normal full HTML workflow. Do not use quick mode for slides, fact-check, visual plans, PPTX, themes, or updates.
