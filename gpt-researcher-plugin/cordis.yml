@@ -1,0 +1,37 @@
+# Mount the gpt-researcher plugin into a DSH profile.
+#
+#   dsh web      --patch /absolute/path/to/gpt-researcher-plugin/cordis.yml
+#   dsh headless --patch /absolute/path/to/gpt-researcher-plugin/cordis.yml "…"
+#
+# `name` must be the absolute path of the built entry point (run
+# `npm run build` first). The placeholder below keeps this file machine-neutral;
+# materialise it with:
+#
+#   sed "s#__ENTRY__#$PWD/dist/index.js#" cordis.yml > /tmp/gptr.patch.yml
+#   dsh headless --patch /tmp/gptr.patch.yml "…"
+#
+# …or replace __ENTRY__ by hand with the absolute path of dist/index.js. Every config field is optional; the defaults below
+# reproduce a working keyless-capable stack:
+#
+#   retriever: dsh_web  → the deployment's own search provider (no new key)
+#   scraper:   bs       → the built-in HTML extractor
+#   embedding: local:hash → deterministic lexical embeddings (no new key)
+#
+# Set `retriever: tavily` (etc.) once the matching API key is in the
+# environment; `gptr_capabilities` reports which retrievers are usable.
+- insert:
+    - id: gpt-researcher
+      name: '__ENTRY__'
+      config:
+        retriever: dsh_web
+        scraper: bs
+        embedding: local:hash
+        memoryBackend: memory
+        outputDir: gptr-reports
+        writeArtifacts: true
+        # Model routing: omit to use the session's selected model for every tier.
+        # provider: deepseek-official
+        # fastModel: deepseek-flash
+        # smartModel: deepseek-flash
+        # strategicModel: deepseek-flash
+        # maxTokens: 4096

@@ -1,0 +1,19 @@
+# Headless smoke-test patch for the gpt-researcher plugin.
+#
+# `scripts/smoke-headless.sh` substitutes __ENTRY__ and __OUTPUT_DIR__ and passes
+# this file to `dsh headless --patch`. Keeping it separate from the shipped
+# `cordis.yml` means the smoke test can pin an isolated output directory without
+# touching the mount example.
+- insert:
+    - id: gpt-researcher
+      name: '__ENTRY__'
+      config:
+        retriever: dsh_web
+        scraper: bs
+        embedding: local:hash
+        memoryBackend: memory
+        outputDir: '__OUTPUT_DIR__'
+        writeArtifacts: true
+        maxSearchResultsPerQuery: 3
+        maxIterations: 1
+        totalWords: 300

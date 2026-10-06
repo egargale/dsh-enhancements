@@ -1,0 +1,86 @@
+gpt-researcher-plugin
+Copyright 2026 the dsh-enhancements contributors
+
+This product is a TypeScript port of gpt-researcher
+(https://github.com/assafelovic/gpt-researcher),
+Copyright Assaf Elovic and contributors, licensed under the Apache License,
+Version 2.0 (see LICENSE).
+
+================================================================================
+NOTICE OF MODIFICATIONS (Apache License 2.0, section 4(b))
+================================================================================
+
+The work in this directory is a re-implementation and adaptation, not a copy of
+the original source tree. It was produced by reading the upstream Python sources
+and rewriting the behaviour in TypeScript for the DeepSeek Harness plugin API.
+The following classes of change were made; every one of them is also marked in
+the affected source file with a `DEVIATION` comment explaining the reason.
+
+Rewritten / translated
+  - Every Python module ported to TypeScript: `gpt_researcher/agent.py`,
+    `actions/`, `skills/`, `config/`, `context/`, `prompts.py`, `retrievers/`,
+    `scraper/`, `document/`, `memory/`, `vector_store/`, `utils/`, and the
+    `multi_agents/` LangGraph flow.
+  - Prompt templates were copied verbatim and are byte-compared against the
+    upstream renderings by the test suite.
+
+Structural changes required by the host
+  - I/O is injected (`EngineDeps`: llm, http, env, log, progress, signal).
+    There are no provider SDK imports and no direct `process.env` credential
+    reads.
+  - LangGraph is replaced by a sequential async driver with the same node order
+    and the same conditional review/revision loop, explicitly bounded.
+  - Progress events that upstream streams over a websocket are forwarded as
+    DeepSeek Harness deferred-context messages.
+  - Cost accounting uses the host's reported token usage and falls back to a
+    character-based estimate (no bundled tokeniser).
+
+Reduced scope (fails loudly instead of degrading silently)
+  - No MCP client (the host provides MCP natively).
+  - No headless-browser scraper; the `browser` scraper reports that it is not
+    bundled.
+  - Server-backed vector stores and non-bundled LLM/embedding providers report
+    the working alternatives.
+  - PDF extraction is limited to uncompressed content streams.
+  - Image generation is not ported.
+
+Fixed upstream defects
+  - `DeepResearchSkill.process_research_results` split `Learning [url]: text` on
+    the first colon (inside `https:`), corrupting every extracted learning. This
+    port takes the text after the `[citation]` group.
+  - `ContextCompressor`'s JSON repair helpers rewrote text inside string values
+    (`"The value is True"` became `"The value is true"`) and could invalidate
+    their own repairs. The repair pass is now string-state aware.
+  - `trim_context_to_word_limit` semantics: the port keeps upstream's truncating
+    branch, which the pinned checkout implements but an earlier revision of this
+    port dropped, leaving a single oversized page to empty the whole context.
+  - `ContextCompressor`'s nearest-chunk fallback and the report generator's empty
+    context handling are described below.
+
+Safety and robustness deltas (additions, not ports)
+  - Fetch policy: non-http(s) schemes, loopback, RFC1918, link-local/cloud
+    metadata, CGNAT, ULA and internal names are refused unless
+    `allowPrivateHosts` is set; redirects are validated hop by hop; search domain
+    filters must be hostnames. Upstream fetches any URL it is given.
+  - Deep-research `breadth`/`depth`/`concurrency` are clamped (10/4/16) because
+    they arrive as model-supplied tool arguments.
+  - Progress events are throttled to milestones: upstream streams every event to
+    a websocket, while a deferred context here becomes a durable user-role
+    message the model re-reads.
+  - `gptr_quick_search` with a summary performs one search, not two.
+  - Vector-store cosine similarity raises a typed error on a dimension mismatch
+    instead of silently comparing truncated vectors, and a corrupt persisted
+    entry no longer destroys the rest of the durable store.
+  - Cancellation propagates end to end (model calls, HTTP, worker pools and the
+    report ladders) instead of degrading into a successful empty result.
+  - When no sources were gathered, `write_report` returns an explicit abstention
+    rather than prompting the model for a report it cannot ground. This is a
+    deliberate behavioural difference from upstream, which writes the report
+    anyway.
+
+Upstream behaviours that are preserved deliberately, including quirks
+  - `SIMILARITY_THRESHOLD` defaults to 0.35 (shadowing the config's 0.42);
+    `COMPRESSION_THRESHOLD` fast path at 8 000 characters; the seed search uses
+    only `retrievers[0]` while URL harvesting uses all non-MCP retrievers;
+    `curate_sources` uses strict JSON parsing and returns the original data on
+    failure; visited URLs are never cleared between runs.

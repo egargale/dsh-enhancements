@@ -1,0 +1,11 @@
+# Build outputs and local test state.
+node_modules/
+dist/
+*.tsbuildinfo
+
+# `scripts/smoke-headless.sh` writes its patch, reports and session artifacts
+# here (`.smoke/`, or a `GPTR_SMOKE_DIR` such as `.smoke-full/`).
+.smoke*/
+
+# Report artifacts written when a smoke run is launched from this directory.
+gptr-reports/
