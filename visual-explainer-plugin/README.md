@@ -72,6 +72,7 @@ The chat node is a client plugin and must be **composed into the Web bundle** �
 
 ## Verify before trusting (checkout-specific)
 
+- **Client plugin API drift (DSH 0.2.0-rc.2):** `src/client/index.tsx` imports `@deepseek-ai/dsh-client-runtime/client`, which this DSH release does not ship; conversation-node types (`ConversationNodeDefinition`) now live under `@deepseek-ai/dsh-client-ui-chat`. The native `present` tool already covers in-GUI delivery of generated pages, so the client node is optional — re-verify it against your checkout or drop it. The server-side `visual_explainer_render_quick` tool is independent of the client node.
 - `tool/result` payload field names in `src/client/index.tsx` (`name`, `callId`, `value`) — verify against `packages/core/tools`.
 - `defineTool` import path and `ParameterSchemaSpec` shape — verify against `@deepseek-ai/dsh-tools` in your checkout.
 - Output writes use `node:fs/promises` relative to the process cwd. A production version should resolve the session workspace root and route writes through the `ctx.fs` seam so sandbox/approval policy applies (the shipped `write` tool is the reference).

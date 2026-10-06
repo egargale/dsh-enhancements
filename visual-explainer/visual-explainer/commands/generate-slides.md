@@ -4,7 +4,7 @@ skill: visual-explainer
 ---
 Load the visual-explainer skill and generate a slide deck for: $@
 
-If `$@` contains the literal `--pptx` flag, remove that flag from the topic. Generate the HTML slide deck first, then run the best-effort static exporter: `node <skill-dir>/pptx/export.mjs <deck.html> <deck.pptx>` (see `./pptx/README.md` for the `node-html-parser` + `pptxgenjs` dependency setup). If the exporter dependencies are not available, deliver the HTML deck and explain that PPTX export needs those dependencies. Tell the user that the HTML deck remains the source of truth and the PPTX will not preserve animations, reader navigation, responsive layout, custom fonts, live Mermaid/Chart.js/SVG/canvas rendering, or JavaScript behavior.
+If `$@` contains the literal `--pptx` flag, remove that flag from the topic. Generate the HTML slide deck first, then run the best-effort static exporter via `await tools.bash({ command: 'node <skill-dir>/pptx/export.mjs <deck.html> <deck.pptx>', description: 'Export PPTX' })` inside `run_code` (see `./pptx/README.md` for the `node-html-parser` + `pptxgenjs` dependency setup). If the exporter dependencies are not available, deliver the HTML deck and explain that PPTX export needs those dependencies. Tell the user that the HTML deck remains the source of truth and the PPTX will not preserve animations, reader navigation, responsive layout, custom fonts, live Mermaid/Chart.js/SVG/canvas rendering, or JavaScript behavior.
 
 Before writing HTML, read `./templates/slide-deck.html`, `./references/slide-patterns.md`, and only the shared CSS/library sections needed for the source.
 
@@ -12,4 +12,4 @@ Plan the deck first: inventory the source, map every item to slides, choose a na
 
 Use visual-first slides: diagrams, charts, tables, and SVG accents. DSH has no bundled image generation — do not try to generate images; use CSS gradients and SVG decorations instead. Vary compositions; three centered slides in a row is a smell.
 
-Write the complete HTML deck to `./diagrams/` and report the path in chat.
+Write the complete HTML deck to `./diagrams/` with `tools.write`; when `--pptx` produced a `.pptx`, declare both files with `tools.present` (1–4 per call); report the paths in chat.

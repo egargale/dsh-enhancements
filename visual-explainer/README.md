@@ -19,6 +19,7 @@ Instead of ASCII art and box-drawing tables, the agent generates a single `.html
 - **9+ aesthetic directions** — blueprint, editorial, paper/ink, terminal, IDE-inspired, data-dense, named palettes (Dracula, Nord, Gruvbox…) via `references/themes.md`, with explicit anti-defaults (no Inter-only, no violet/neon crutches).
 - **Quick mode** — compact JSON spec rendered deterministically by `quick/render.mjs` (schema-validated; tested in this repo) or by the optional plugin tool `visual_explainer_render_quick`.
 - **Best-effort PPTX export** — `/generate-slides --pptx` produces a static `.pptx` after the HTML deck (`pptx/export.mjs`).
+- **GUI delivery via `present`** — every generated page is declared with `tools.present({ files: [{ path, description }] })` inside `run_code`, so the Web GUI shows an openable file card (the optional plugin's chat node is only needed for custom branding).
 - **Fact-gathering discipline** — review commands build a verified fact sheet (git + `file:line` evidence) before any HTML is written; nothing is invented.
 
 ## Skills (installed to `~/.dsh/skills/`)
@@ -40,11 +41,11 @@ All are **model-invocable** (appear in the session skill catalog) and **user-inv
 
 | Upstream (Claude Code / Pi / Cursor) | DSH equivalent |
 |---|---|
-| `~/.agent/diagrams/` output dir | `./diagrams/` in the session workspace (sandbox-friendly; honored by the `write` tool) |
-| `open` / browser launch after render | No browser auto-open in DSH — the agent reports the file path in chat; pages are self-contained and openable anywhere |
+| `~/.agent/diagrams/` output dir | `./diagrams/` in the session workspace (sandbox-friendly; written with `tools.write` inside `run_code`) |
+| `open` / browser launch after render | No browser auto-open in DSH — the agent reports the file path in chat and declares it with the `present` tool (`tools.present` in Code Mode) so the GUI shows an openable file card; pages are self-contained and openable anywhere |
 | Slash commands via Claude Code `commands/` | User-invocable skills (`/diff-review` … in the DSH composer), each loading the core skill first |
 | Pi `visual_explainer.prepare/render` tool | The `write` tool + the skill workflow (no harness-specific render API) — in DSH Code Mode all tools are called as `tools.<name>({...})` inside a `run_code` program |
-| Pi `render_quick` action | `quick/render.mjs` via `bash` (needs `node`), or the optional `visual_explainer_render_quick` plugin tool when installed |
+| Pi `render_quick` action | `quick/render.mjs` via `tools.bash` (needs `node`), or the optional `visual_explainer_render_quick` plugin tool (`tools.visual_explainer_render_quick`) when installed |
 | surf-cli + Gemini image generation | **Not ported** — DSH has no bundled image generation; slides/pages degrade to CSS gradients + inline SVG (never error) |
 | MCP server (`mcp/server.mjs`) | **Not ported** — DSH's native `skill` + `write` tools replace the render-tool interface; see [visual-explainer-plugin](../visual-explainer-plugin) for the deterministic-render alternative |
 | Claude Code plugin packaging (`.claude-plugin`, `extension.ts`, `configs/`) | **Not ported** — not applicable to DSH profiles |
@@ -56,7 +57,7 @@ The core design principle is preserved from upstream: **the skill degrades grace
 
 ### Prerequisites
 
-- A running DSH **web profile** (`dsh web` or `dsh --profile web`) with the `dsh-base` bundle (ships the skill system, `write`/`bash`, and the `skill` tool).
+- A running DSH **web profile** (`dsh web` or `dsh --profile web`) with the `dsh-base` bundle (ships the skill system, Code Mode `run_code`, `write`/`bash`, `present`, and the `skill` tool). The `standard`, `ptc`, and `cordis` agent presets mount `present`.
 - A browser to open the generated HTML files (DSH itself does not render them inline).
 - Optional: `node` >= 18 for quick mode and PPTX export; the optional plugin (below) removes the `node` requirement for quick mode.
 
@@ -91,7 +92,7 @@ The skill bundle (`visual-explainer/`) contains everything the commands need —
 
 ### 2. Optional: install the `visual-explainer-plugin`
 
-The ad-hoc DSH plugin (see [../visual-explainer-plugin](../visual-explainer-plugin/README.md)) registers a deterministic `visual_explainer_render_quick` tool (spec → HTML, no `node` needed) and a Web Client chat node that shows a delivered-diagram card. Build it against a DSH source checkout and mount with `pnpm dsh web --patch ./visual-explainer-plugin/cordis.yml`. The skill uses it automatically when present and degrades gracefully when absent.
+The ad-hoc DSH plugin (see [../visual-explainer-plugin](../visual-explainer-plugin/README.md)) registers a deterministic `visual_explainer_render_quick` tool (spec → HTML, no `node` needed) and a Web Client chat node that shows a delivered-diagram card. Build it against a DSH source checkout and mount with `pnpm dsh web --patch ./visual-explainer-plugin/cordis.yml`. The skill uses it automatically when present and degrades gracefully when absent. In current DSH the native `present` tool already covers in-GUI delivery, so the plugin's client node is optional.
 
 ### 3. Verify
 
@@ -127,7 +128,7 @@ Output lands in `./diagrams/` (relative to the session working directory). The a
 
 ## Maintenance & drift
 
-This is a **port** of the upstream skill, so upstream updates do not propagate automatically. The upstream repo (master) is the source of truth for aesthetic patterns; when it changes, re-apply the DSH deltas: output dir (`./diagrams/`), delivery (report path, no browser), quick mode (node script / plugin tool), no image generation, no MCP layer.
+This is a **port** of the upstream skill, so upstream updates do not propagate automatically. The upstream repo (master) is the source of truth for aesthetic patterns; when it changes, re-apply the DSH deltas: output dir (`./diagrams/`), delivery (`tools.present` file card + report the path, no browser), quick mode (`quick/render.mjs` via `tools.bash` / the plugin tool), no image generation, no MCP layer, and the Code Mode `tools.*` invocation form.
 
 ## Troubleshooting
 
@@ -138,7 +139,8 @@ This is a **port** of the upstream skill, so upstream updates do not propagate a
 | PPTX export fails | Install `node-html-parser` + `pptxgenjs` into a scratch dir (see `pptx/README.md`) and run from there; otherwise the HTML deck is the deliverable |
 | Mermaid diagram doesn't render | Check the `diagram-shell` pattern and `theme: 'base'` + `themeVariables`; bare `<pre class="mermaid">` is forbidden |
 | Skills don't appear in the catalog | Confirm the eight directories are directly under the skills root (nested `**/SKILL.md` discovery is not supported) |
-| Tool errors `unknown tool "write"` / `only \`run_code\` is callable directly` | DSH Code Mode: only `run_code` is callable directly — every tool call must be `tools.<name>({...})` inside a `run_code` program. The skill text now uses that form; a bare `write(...)` fails even though the tool exists (harmless if the agent retries correctly, but it costs a model turn) |
+| Tool errors `unknown tool "write"` / `only \`run_code\` is callable directly` | DSH Code Mode: only `run_code` is callable directly — every tool call must be `tools.<name>({...})` inside a `run_code` program. All eight skills now use that form; a bare `write(...)` fails even though the tool exists (harmless if the agent retries correctly, but it costs a model turn) |
+| No openable file card appears in the GUI | After writing the page, declare it with `tools.present({ files: [{ path, description }] })` inside `run_code` (1–4 files per call) |
 
 ## License
 

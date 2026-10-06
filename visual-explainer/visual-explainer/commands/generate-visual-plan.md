@@ -6,7 +6,7 @@ Load the visual-explainer skill and generate a self-contained HTML implementatio
 
 ## Research first
 
-Read relevant repo files before planning (`read`/`glob`/`grep`). Identify entry points, existing patterns, affected modules, public APIs, tests, config/schema/data model, similar features, and constraints from README/CHANGELOG/docs.
+Read relevant repo files before planning with `tools.read`/`tools.glob`/`tools.grep` (inside `run_code`). Identify entry points, existing patterns, affected modules, public APIs, tests, config/schema/data model, similar features, and constraints from README/CHANGELOG/docs.
 
 ## Required page sections
 
@@ -22,4 +22,4 @@ Read relevant repo files before planning (`read`/`glob`/`grep`). Identify entry 
 
 Use hierarchy: overview and architecture dominate; detailed file/test/reference sections stay compact or collapsible. Follow the skill's Mermaid, table, overflow, and delivery rules.
 
-Write the complete HTML document to `./diagrams/` and report the path in chat.
+Write the complete HTML document to `./diagrams/` with `tools.write`, declare it with `tools.present`, and report the path in chat.

@@ -18,7 +18,7 @@ Generate self-contained HTML pages that explain systems, code changes, plans, da
 - Prefer an HTML page over terminal ASCII when the output is inherently visual.
 - If a table would have 4+ rows or 3+ columns, render it as HTML and give only a short chat summary.
 - **Output location (DSH):** write files to `./diagrams/` relative to the session working directory (or the explicit path the user gives). Use descriptive filenames, e.g. `diff-review-auth-flow.html`. `tools.write` (inside `run_code`) creates parent directories; if a directory is missing, create it first with `tools.bash({ command: 'mkdir -p …' })`.
-- **Delivery (DSH):** DSH runs inside a sandboxed workspace and cannot open a browser on your behalf. After writing, report the file's path in chat (absolute or workspace-relative) and one line on what the page contains. The user opens the file locally; the page must stand alone.
+- **Delivery (DSH):** DSH runs inside a sandboxed workspace and cannot open a browser on your behalf. After writing, declare the file with `await tools.present({ files: [{ path: './diagrams/<name>.html', description: '<one line>' }] })` (inside `run_code`) so the GUI shows an openable file card, **and** report the path (absolute or workspace-relative) plus one line on what the page contains in chat. The user opens the file locally; the page must stand alone.
 - Generate a Markdown companion only when the user explicitly asks for AI-readable output or a source brief. Keep HTML as the final visual output; Markdown is a companion, never the source for HTML. Write `<name>.md` beside `<name>.html` when possible, and ask before replacing an existing companion file.
 - The final page must be a complete self-contained HTML document: embedded CSS, a self-contained favicon, and any needed JS. No external files, no build step.
 
@@ -40,7 +40,7 @@ The argument the user typed after the command name is `$@` inside the template. 
 
 ## Working with this skill's files (DSH)
 
-All relative paths in this skill (`./references/...`, `./templates/...`, `./commands/...`, `./quick/...`, `./pptx/...`) resolve against **this skill's base directory**, reported by the `skill` tool as `resourceBase` (kind: directory). Read reference and template files before generating — don't memorize them, read them fresh each time. If you need to locate them, use `glob` from the base directory.
+All relative paths in this skill (`./references/...`, `./templates/...`, `./commands/...`, `./quick/...`, `./pptx/...`) resolve against **this skill's base directory**, reported as `resourceBase` (kind: directory) by `await tools.skill({ name: 'visual-explainer' })` inside a `run_code` program. Read reference and template files before generating — don't memorize them, read them fresh each time with `tools.read`. If you need to locate them, use `tools.glob` from the base directory.
 
 ## DSH tool invocation (Code Mode) — read first
 
@@ -56,6 +56,7 @@ That message means the tool exists but was called on the wrong surface — retry
 await tools.write({ file_path: './diagrams/auth-flow.html', content: '<!doctype html>…' })
 await tools.bash({ command: 'mkdir -p diagrams && git diff --stat main', description: '…' })
 await tools.read({ file_path: '<skill-dir>/templates/mermaid-flowchart.html' })
+await tools.present({ files: [{ path: './diagrams/auth-flow.html', description: 'Auth-flow diagram (HTML)' }] })
 ```
 
 If a `tools.*` call still fails, fall back to a `bash` heredoc (`cat > file <<'EOF'`) or plain `tools.bash` for the same operation.
@@ -67,8 +68,8 @@ Quick mode is opt-in. Use it only when `--quick` appears on `/generate-web-diagr
 For quick mode, read `./quick/README.md` and `./quick/schema.json`. Gather and verify the same source facts as full mode, but emit the compact JSON spec. In DSH:
 
 1. Compose the spec JSON.
-2. **If the optional `visual-explainer-plugin` is installed**, call the `visual_explainer_render_quick` tool with the spec, a descriptive filename, and an optional output directory (default `./diagrams/`) — it validates, renders, and writes the HTML deterministically. **Otherwise**, write the spec with `tools.write({ file_path: '<output-dir>/.<name>.spec.json', content: … })` (inside `run_code`) and run `node <skill-dir>/quick/render.mjs <spec.json> <output.html>` via `tools.bash(...)` (`<skill-dir>` is this skill's base directory).
-3. Remove the temporary spec file after a successful render (unless the user wants it kept), then report the HTML path.
+2. **If the optional `visual-explainer-plugin` is installed**, call `await tools.visual_explainer_render_quick({ spec, filename, outputDir })` inside `run_code` with the spec, a descriptive filename, and an optional output directory (default `./diagrams/`) — it validates, renders, and writes the HTML deterministically. **Otherwise**, write the spec with `tools.write({ file_path: '<output-dir>/.<name>.spec.json', content: … })` (inside `run_code`) and run `node <skill-dir>/quick/render.mjs <spec.json> <output.html>` via `tools.bash(...)` (`<skill-dir>` is this skill's base directory).
+3. Remove the temporary spec file after a successful render (unless the user wants it kept), then declare the HTML with `tools.present` and report its path.
 
 If the plugin tool is absent, `node` is unavailable, the spec does not validate, or rendering errors, fall back to the normal full HTML workflow. Do not use quick mode for slides, fact-check, visual plans, PPTX, themes, or updates.
 
@@ -149,8 +150,8 @@ Slides rules:
 
 For review commands (diff-review, plan-review, project-recap, fact-check), gather and verify every claim against the actual code and git history before generating HTML:
 
-- Run the relevant `git` commands via `bash` (diff stats, name-status, log, show).
-- Read all changed/referenced files in full with the `read` tool; use `grep`/`glob` to find patterns and dependents.
+- Run the relevant `git` commands via `tools.bash({ command, description })` (diff stats, name-status, log, show).
+- Read all changed/referenced files in full with `tools.read`; use `tools.grep`/`tools.glob` to find patterns and dependents.
 - Build a structured fact sheet of every quantitative figure, symbol name, and behavior claim you will present, each with its source (command output or `file:line`). Do not deviate from it during generation; mark unverifiable claims as uncertain rather than stating them as fact.
 - If the work was done earlier in this session, mine the conversation for decisions and rationale; for committed work, read commit messages and PR descriptions.
 
@@ -169,7 +170,7 @@ Before delivery, verify:
 - slides fit one viewport, include reader rail plus outline/help navigation, and preserve source coverage; if PPTX was requested, the static `.pptx` was generated after the HTML deck and its fidelity limits were stated;
 - visual hierarchy makes the main idea obvious in the first viewport;
 - styling would still be recognizable if compared against a generic dark/violet template;
-- the file path was reported in chat (DSH cannot open browsers for you);
+- the file was declared with `tools.present({ files: [{ path, description }] })` and its path reported in chat (DSH cannot open browsers for you);
 - if requested, the Markdown companion is a concise source brief that matches the delivered HTML without becoming its source of truth.
 
 ## Attribution

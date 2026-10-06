@@ -6,15 +6,15 @@ Load the visual-explainer skill and generate a self-contained HTML plan review.
 
 ## Quick mode
 
-Only use quick mode when `$@` contains the literal `--quick` flag. Remove the flag before resolving the plan input. Complete the same code research and verification below, then read `./quick/README.md` and `./quick/schema.json` and express the review as a compact spec. Write the spec with `tools.write({ file_path: './diagrams/.<name>.spec.json', content: … })` (inside `run_code`), run `node <skill-dir>/quick/render.mjs <spec.json> <output.html>` via `tools.bash(...)` (or call the `visual_explainer_render_quick` tool when the optional plugin is installed), remove the spec file after success, and report the HTML path. If the review does not fit the schema, validation fails, rendering errors, or `node` is unavailable, generate complete HTML and use the normal render flow. Without `--quick`, preserve full HTML behavior.
+Only use quick mode when `$@` contains the literal `--quick` flag. Remove the flag before resolving the plan input. Complete the same code research and verification below, then read `./quick/README.md` and `./quick/schema.json` and express the review as a compact spec. Write the spec with `tools.write({ file_path: './diagrams/.<name>.spec.json', content: … })` (inside `run_code`), run `node <skill-dir>/quick/render.mjs <spec.json> <output.html>` via `tools.bash(...)` (or call `tools.visual_explainer_render_quick({ spec, filename, outputDir })` when the optional plugin is installed), remove the spec file after success, and report the HTML path. If the review does not fit the schema, validation fails, rendering errors, or `node` is unavailable, generate complete HTML and use the normal render flow. Without `--quick`, preserve full HTML behavior.
 
 ## Inputs
 
-Use `$@` as the plan path or plan text. If no path is given, ask for the plan (`ask_user_question` if you need clarification).
+Use `$@` as the plan path or plan text. If no path is given, ask for the plan (`tools.ask_user_question` inside `run_code` if you need clarification).
 
 ## Data gathering before HTML
 
-Read the plan in full. Extract goals, assumptions, proposed files/functions/types, migrations, tests, rollout/release notes, and explicit risks. Read every referenced file, plus importers/dependents that may be affected. Use `grep` for existing patterns, similar implementations, public API boundaries, config/schema files, and tests.
+Read the plan in full. Extract goals, assumptions, proposed files/functions/types, migrations, tests, rollout/release notes, and explicit risks. Read every referenced file, plus importers/dependents that may be affected. Use `tools.grep` for existing patterns, similar implementations, public API boundaries, config/schema files, and tests.
 
 ## Source verification
 
@@ -33,4 +33,4 @@ For each proposed change, verify whether referenced files/functions/types exist,
 
 Use current-vs-planned visual language. Include responsive nav. Follow the skill's Mermaid, overflow, and evidence rules.
 
-Write the complete HTML document to `./diagrams/` and report the path in chat.
+Write the complete HTML document to `./diagrams/` with `tools.write`, declare it with `tools.present`, and report the path in chat.

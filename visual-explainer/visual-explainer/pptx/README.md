@@ -27,6 +27,6 @@ Then run the exporter from that directory so the imports resolve:
 cd /tmp/ve-pptx-deps && node <skill-dir>/pptx/export.mjs <deck.html> <deck.pptx>
 ```
 
-`<skill-dir>` is this skill's base directory (the `skill` tool reports it as `resourceBase`). If you omit the output path, the exporter writes beside the input with a `.pptx` suffix.
+`<skill-dir>` is this skill's base directory (reported as `resourceBase` by `tools.skill({ name: 'visual-explainer' })`). If you omit the output path, the exporter writes beside the input with a `.pptx` suffix.
 
-If the dependencies are not available, deliver the HTML deck and explain that PPTX export needs them. Use the HTML output for final fidelity; use the `.pptx` as a portable static handoff when a presentation file is required.
+The shell steps above run through `tools.bash({ command, description })` inside a `run_code` program. If the dependencies are not available, deliver the HTML deck and explain that PPTX export needs them. Use the HTML output for final fidelity; use the `.pptx` as a portable static handoff when a presentation file is required. Declare the produced HTML and `.pptx` files with `tools.present` (1–4 files per call).

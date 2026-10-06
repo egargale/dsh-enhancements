@@ -2,7 +2,7 @@
 description: Verify a generated document against actual code and git history
 skill: visual-explainer
 ---
-Load the visual-explainer skill and fact-check the document named by `$@`. If no argument is given, use the most recently modified HTML file in `./diagrams/` (`bash`: `ls -t ./diagrams/*.html | head -1`).
+Load the visual-explainer skill and fact-check the document named by `$@`. If no argument is given, use the most recently modified HTML file in `./diagrams/` (`tools.bash({ command: 'ls -t ./diagrams/*.html | head -1', description: 'Find latest diagram' })` inside `run_code`).
 
 ## Claim extraction
 
@@ -12,4 +12,4 @@ Read the target document. Extract verifiable claims about file paths, function/t
 
 For each claim, inspect the actual source or git history. Re-read referenced files. For diff reviews, compare before/after with `git show` or the relevant range. For plan docs, verify referenced files/functions/types exist and behave as described.
 
-Classify claims as verified, corrected, unsupported, or unverifiable. Preserve the document's structure. Correct factual errors in place and add a verification summary that lists what was checked and changed. For HTML, match the existing page style and write the corrected file back with `tools.write({ file_path, content })` (inside `run_code`); report the path in chat. For markdown, report the path in chat.
+Classify claims as verified, corrected, unsupported, or unverifiable. Preserve the document's structure. Correct factual errors in place and add a verification summary that lists what was checked and changed. For HTML, match the existing page style and write the corrected file back with `tools.write({ file_path, content })` (inside `run_code`); declare it with `tools.present`, then report the path in chat. For markdown, report the path in chat.
