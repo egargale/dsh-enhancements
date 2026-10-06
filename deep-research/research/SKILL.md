@@ -5,9 +5,15 @@ whenToUse: Use when starting a structured deep-research effort — academic surv
 user-invocable: true
 ---
 
-# Deep Research — Preliminary Research (DSH edition)
+# Deep Research — Preliminary Research (DSH edition, v2)
 
 A structured, human-in-the-loop research workflow adapted from Weizhena/Deep-Research-skills to DeepSeek Harness tooling. Run the phases in order: /research → (/research-add-items, /research-add-fields as needed) → /research-deep → /research-report.
+
+## DSH tool invocation (Code Mode) — read first
+
+DSH runs agents in **Code Mode**: the only tool callable directly is `run_code`; every other tool is reached as `await tools.<name>({...})` **inside a `run_code` program**. This skill's steps below name the `tools.*` form. A bare `write(...)` call fails with `unknown tool "write": only run_code is callable directly`.
+
+Used here: `tools.glob`, `tools.read`, `tools.write`, `tools.bash`, `tools.skill`, `tools.subagent`, `tools.ask_user_question`.
 
 ## Trigger
 `/research <topic>`
@@ -19,14 +25,26 @@ Generate from the topic, using your own knowledge:
 - Main research objects/items list in this domain.
 - A suggested research-field framework (categories and fields).
 
-Then use `ask_user_question` to confirm:
+Then call `tools.ask_user_question` to confirm:
 - Add/remove items?
 - Does the field framework meet requirements?
 
 ### Step 2 — Web-search supplement
-Use `ask_user_question` to ask for a time range (e.g. "last 6 months", "since 2024", "unlimited").
+Call `tools.ask_user_question` to ask for a time range (e.g. "last 6 months", "since 2024", "unlimited").
 
-Load the `deep-research-agent` skill for the researcher persona. Launch **one background subagent** (`subagent` tool, background mode) whose prompt is the deep-research-agent content plus the following task prompt, reproduced as faithfully as possible (only replace the {variables}). The subagent searches with AnySearch (anysearch tools); if it lacks them it falls back to the built-in `web_search`.
+Load the `deep-research-agent` skill (`await tools.skill({ name: 'deep-research-agent' })`) for the researcher persona, then run **one `run_code` program** that launches a single foreground research child:
+
+```js
+const res = await tools.subagent({
+  description: 'supplement research framework',
+  prompt: persona + "\n\n" + taskPrompt,   // persona = the loaded skill text
+  run_in_background: false,                   // REQUIRED: the ptc preset defaults to continuable/background
+})
+const text = (res.output || []).filter((b) => b.type === 'text').map((b) => b.text).join('')
+return text
+```
+
+The child searches with AnySearch (MCP tools when present, else the anysearch skill CLI); if it lacks them it falls back to native `tools.web_search`. Task prompt (reproduce faithfully, only replace the {variables}):
 
 ```
 ## Task
@@ -55,17 +73,17 @@ Return structured results directly (do not write files):
 ```
 
 ### Step 3 — Existing fields
-Use `ask_user_question` to ask whether the user has an existing field-definition file; if so, `read` and merge it.
+Use `tools.ask_user_question` to ask whether the user has an existing field-definition file; if so, `tools.read` and merge it.
 
 ### Step 4 — Generate outline (separate files)
-Merge {step1_output}, the subagent's supplement, and any user fields. Write two files with the `write` tool:
+Merge {step1_output}, the subagent's supplement, and any user fields. Write two files with `tools.write` (inside `run_code`):
 
 **outline.yaml** (items + execution config):
 - topic: research topic
 - items: research objects list (name, category, description)
 - execution:
-  - batch_size: parallel agents per batch (confirm via `ask_user_question`)
-  - items_per_agent: items per agent (confirm via `ask_user_question`)
+  - batch_size: parallel agents per batch (confirm via `tools.ask_user_question`)
+  - items_per_agent: items per agent (confirm via `tools.ask_user_question`)
   - output_dir: results output directory (default `./results`)
 
 **fields.yaml** (field definitions):
@@ -74,8 +92,8 @@ Merge {step1_output}, the subagent's supplement, and any user fields. Write two 
 - uncertain: reserved field names (auto-filled in the deep phase)
 
 ### Step 5 — Save and confirm
-- Create the directory `./{topic_slug}/` (slugify the topic).
-- Save `outline.yaml` and `fields.yaml` there.
+- Create the directory `./{topic_slug}/` (slugify the topic). `tools.write` creates parent directories; `tools.bash({ command: 'mkdir -p {topic_slug}' })` also works.
+- Save `outline.yaml` and `fields.yaml` there with `tools.write`.
 - Show the user for confirmation.
 
 ## Output Path
@@ -88,11 +106,11 @@ Merge {step1_output}, the subagent's supplement, and any user fields. Write two 
 ## Follow-up Commands
 - `/research-add-items` — supplement items
 - `/research-add-fields` — supplement fields
-- `/research-deep` — start deep research (workflow + subagents)
+- `/research-deep` — start deep research (run_code + parallel subagents)
 - `/research-report` — generate the final markdown report
 
 ## DSH tool mapping (upstream -> DSH)
-- AskUserQuestion -> `ask_user_question`
-- WebSearch/WebFetch -> anysearch `search`/`batch_search`/`extract` (primary; fallback: DSH `web_search`)
-- Task / web-search-agent -> `subagent` (background) with the `deep-research-agent` persona
-- Bash/Read/Write/Glob -> `bash` / `read` / `write` / `glob`
+- AskUserQuestion -> `tools.ask_user_question` (inside `run_code`)
+- WebSearch/WebFetch -> AnySearch MCP tools / anysearch skill CLI (primary); native `tools.web_search` / `tools.web_fetch` (fallback)
+- Task / web-search-agent -> `tools.subagent` (foreground, `run_in_background: false`) with the `deep-research-agent` persona
+- Bash/Read/Write/Glob -> `tools.bash` / `tools.read` / `tools.write` / `tools.glob`

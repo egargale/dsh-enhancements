@@ -5,7 +5,10 @@ whenToUse: Use after /research-deep has produced per-item JSON results (and veri
 user-invocable: true
 ---
 
-# Research Report — Summary Report (DSH edition, v2)
+# Research Report — Summary Report (DSH edition, v3)
+
+## DSH tool invocation (Code Mode)
+Only `run_code` is callable directly; every other tool is `await tools.<name>({...})` **inside a `run_code` program** — here `tools.glob`, `tools.read`, `tools.write`, `tools.bash`, `tools.ask_user_question`. A bare `read(...)` call fails with `unknown tool "…": only run_code is callable directly`.
 
 ## Trigger
 `/research-report`
@@ -13,16 +16,16 @@ user-invocable: true
 ## Workflow
 
 ### Step 1 — Locate results
-Use `glob` to find `*/outline.yaml`; `read` the topic and the execution `output_dir` config. List the JSON results and any `*.verification.json` metadata in `{output_dir}`.
+Run `tools.glob({ pattern: '*/outline.yaml' })`; `tools.read` the topic and the execution `output_dir` config. List the JSON results and any `*.verification.json` metadata in `{output_dir}`.
 
 ### Step 2 — Scan optional summary fields
 Read all JSON results and extract fields suitable for a table of contents and comparison table (numeric/short metrics), e.g.: github_stars, google_scholar_cites, swe_bench_score, user_scale, valuation, release_date, price.
-Use `ask_user_question` to ask the user:
+Use `tools.ask_user_question` to ask the user:
 - Which fields to display in the TOC and comparison table besides the item name?
 - Provide dynamic options built from the actual fields found in the JSONs.
 
 ### Step 3 — Use the shipped report script
-The conversion script ships with this skill — `generate_report.py` in **this skill's directory** (find it relative to the skill base directory via `glob`). Copy it into `{topic}/` (or run it directly from the skill dir, passing the results directory). The script implements:
+The conversion script ships with this skill — `generate_report.py` in **this skill's directory** (find it relative to the skill base directory via `tools.glob`). Copy it into `{topic}/` with `tools.read` + `tools.write` (or run it directly from the skill dir, passing the results directory). The script implements:
 - Read all JSON from the output_dir, fields.yaml, and verification metadata (`*.verification.json` when present).
 - Cover every field value from each JSON; skip fields whose value contains `[uncertain]` or that are listed in the item's `uncertain` array.
 - Support BOTH flat JSON (fields at top level) and nested JSON (fields grouped under category dicts). Field lookup order: top level -> category mapping key -> traverse nested dicts.
@@ -47,9 +50,9 @@ CATEGORY_MAPPING = {
   5. **Uncertainty & confidence summary**: per item — uncertain fields, `[uncertain]` values, verification confidence (high/medium/low) and conflicts.
 
 ### Step 4 — Run and deliver
-Run the script (from `{topic}/`, or point it at the results dir):
-```
-python3 {topic}/generate_report.py --summary-fields <f1,f2,...>
+Run the script from a `run_code` program (from `{topic}/`, or point it at the results dir):
+```js
+await tools.bash({ command: 'python3 {topic}/generate_report.py --summary-fields <f1,f2,...>', description: 'Generate research report' })
 ```
 Omit `--summary-fields` to auto-detect fields present across items. Confirm `{topic}/report.md` was produced; show the user a preview.
 

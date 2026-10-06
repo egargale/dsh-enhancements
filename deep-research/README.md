@@ -1,17 +1,17 @@
 # DSH Deep Research Enhancement
 
-A complete, human-in-the-loop **deep-research workflow** for [DeepSeek Harness (DSH)](https://github.com/deepseek-ai/deepseek-harness) — adapted from [Weizhena/Deep-Research-skills](https://github.com/Weizhena/Deep-Research-skills) to DSH-native primitives: **skills, background subagents, the workflow tool, AnySearch web search, and ask_user_question**.
+A complete, human-in-the-loop **deep-research workflow** for [DeepSeek Harness (DSH)](https://github.com/deepseek-ai/deepseek-harness) — adapted from [Weizhena/Deep-Research-skills](https://github.com/Weizhena/Deep-Research-skills) to DSH-native primitives: **skills, Code Mode `run_code` orchestration, parallel subagents, AnySearch / native web search, and `ask_user_question`**.
 
 Research a topic end-to-end: **plan → research → refine → verify → validate → report** — with every claim grounded in cited sources and confidence-rated.
 
 ## Features
 
 - **Five-command research flow** — `/research` → `/research-add-items` / `/research-add-fields` → `/research-deep` → `/research-report`, plus a reusable researcher persona (`deep-research-agent`).
-- **Parallel subagent fan-out** — the deep phase orchestrates one research agent per item via the DSH `workflow` tool; concurrency is bounded by the harness (default `min(16, cores−2)`), total agents per run up to 1000.
+- **Code Mode orchestration** — DSH's `ptc` agent preset disables the `workflow` tool, so the deep phase is one `run_code` program per batch that fans out parallel foreground `tools.subagent` calls (one research child per item). `deep-research.workflow.js` remains for native presets that still expose `workflow`; total agents per run up to 1000.
 - **Plan-first method** — every research child writes 5–10 diverse query variations before searching (STORM / Gemini-collaborative-planning style).
 - **Two-pass gap refinement** — round 1 research, then a targeted round-2 child re-searches *only* missing/uncertain fields (`maxRounds: 2`).
 - **Verification pass** — an optional QA child cross-checks every claim against its cited sources, resolves conflicts via targeted search, and returns `confidence` + `conflicts` (`verify: true`).
-- **AnySearch primary search engine** — `search` / `batch_search` / `extract` (Exa-class, vertical domains via `get_sub_domains`), with DSH `web_search` as automatic fallback when AnySearch tools are unavailable.
+- **AnySearch-first search** — AnySearch MCP tools (`anysearch-search` / `-batch_search` / `-extract` / `-get_sub_domains`) or the anysearch skill CLI, with native DSH `web_search` / `web_fetch` as the always-available fallback.
 - **Validated JSON output** — `validate_json.py` gates every item on field coverage (required fields must be present).
 - **Rich markdown reports** — TOC with anchors, comparison table, per-item detailed content with citations, cross-item synthesis, and an uncertainty & confidence summary.
 - **Resume + human-in-the-loop** — completed items are skipped on re-run; each batch waits for user approval.
@@ -24,7 +24,7 @@ Research a topic end-to-end: **plan → research → refine → verify → valid
 | `research` | Outline generation: items + field framework (human-in-the-loop) | `/research <topic>` + model |
 | `research-add-items` | Add research objects to an existing outline | `/research-add-items` |
 | `research-add-fields` | Add field definitions to an existing outline | `/research-add-fields` |
-| `research-deep` | Deep research: workflow-orchestrated parallel subagents, two-pass refinement, optional verification, validated JSON | `/research-deep` |
+| `research-deep` | Deep research: run_code-orchestrated parallel subagents, two-pass refinement, optional verification, validated JSON | `/research-deep` |
 | `research-report` | Consolidate JSON results into a markdown report (TOC, comparison, synthesis, confidence) | `/research-report` |
 | `deep-research-agent` | Elite web-researcher persona — load it, then use its content as every research subagent's prompt | model |
 
@@ -34,12 +34,20 @@ All are **model-invocable** (appear in the session skill catalog) and **user-inv
 
 | Upstream (Claude Code / Codex) | DSH equivalent |
 |---|---|
-| `AskUserQuestion` | `ask_user_question` tool |
-| `WebSearch` / `WebFetch` | anysearch `search`/`batch_search`/`extract` (primary) + DSH `web_search` fallback |
-| `Task` / web-search-agent (`agents/*.md`) | `subagent` (background) + `deep-research-agent` skill as the prompt |
+| `AskUserQuestion` | `ask_user_question` (called as `tools.ask_user_question` inside `run_code`) |
+| `WebSearch` / `WebFetch` | AnySearch MCP tools / anysearch skill CLI (primary) + native `web_search` / `web_fetch` fallback |
+| `Task` / web-search-agent (`agents/*.md`) | `subagent` (foreground, `run_in_background: false`) + `deep-research-agent` skill as the prompt |
 | Codex `request_user_input` | `ask_user_question` |
 | `python ~/.claude/skills/research/validate_json.py` | `validate_json.py` shipped next to the `research` skill (resolve via the skill base dir) |
-| Claude per-batch `Task` fan-out | `workflow` tool with `deep-research.workflow.js` (one call per batch, approval between batches) |
+| Claude per-batch `Task` fan-out | one `run_code` program per batch that awaits parallel `tools.subagent` children; legacy `workflow` tool + `deep-research.workflow.js` on native presets |
+| (DSH Code Mode) only `run_code` is callable directly | every other tool is `await tools.<name>({...})` inside a `run_code` program |
+
+## What's new in v3 — Code Mode / `ptc` preset
+
+- **Code Mode tool invocation** — all six skills name the `tools.*` form; the `deep-research-agent` persona documents that research children run in Code Mode too.
+- **`run_code` replaces the workflow tool** — the shipped `ptc` agent preset disables `tool-workflow`/`workflow-ptc`; the deep phase is now one `run_code` program per batch awaiting parallel `tools.subagent({ run_in_background: false })` children.
+- **New orchestration template** — `research-deep/deep-research.run-code.js`.
+- **Legacy workflow path retained** — `research-deep/deep-research.workflow.js` still works where the `workflow` tool is enabled (e.g. the `standard` preset).
 
 ## What's new in v2 — gap closure
 
@@ -55,7 +63,7 @@ Upgrades implemented after researching agentic deep-research architectures (STOR
 
 ### Prerequisites
 
-- A running DSH **web profile** (`dsh web` or `dsh --profile web`) with the `dsh-base` bundle (ships the `workflow` tool, background subagents, `web_search`, and the skill system).
+- A running DSH **web profile** (`dsh web` or `dsh --profile web`) with the `dsh-base` bundle (Code Mode `run_code`, background subagents, `web_search`, and the skill system). The `ptc` agent preset presents Code Mode and disables the `workflow` tool; the `standard` preset keeps `workflow` but presents tools natively.
 - `python3` + PyYAML (for `validate_json.py` and the generated report script).
 - The **anysearch skill** (optional — the primary search engine; `web_search` is the built-in fallback). Install it from [anysearch-ai/anysearch-skill](https://github.com/anysearch-ai/anysearch-skill) — see [Optional: install the anysearch skill](#optional-install-the-anysearch-skill) below.
 
@@ -118,12 +126,12 @@ cp -R research research-add-items research-add-fields research-deep research-rep
 Re-run the chosen command after pulling new versions of the source skills to
 refresh them.
 
-### 2. Raise the 600-second tool ceiling (recommended for multi-item runs)
+### 2. Raise the run_code ceiling (recommended for multi-item runs)
 
 Every tool call from a DSH agent runs inside `run_code`, which has a hard
-`maxWallMs` ceiling (default **600 000 ms = 10 min**). The `workflow` tool itself
-is not capped, but it is invoked *through* run_code — so any research run longer
-than 10 minutes is killed at the wrapper. Measured on a 4-core box (concurrency 2):
+`maxWallMs` ceiling (default **600 000 ms = 10 min**). The deep phase runs one
+long `run_code` program per batch, so any batch longer than 10 minutes is killed
+at the wrapper. Measured on a 4-core box (concurrency 2):
 
 | Items | ~Runtime (verify on) |
 |---|---|
@@ -164,29 +172,29 @@ In the web UI, start a new session: all six skills appear in the
 /research-report                      → {topic}/report.md
 ```
 
-Each batch runs the `workflow` tool with `deep-research.workflow.js`:
+Each batch runs one `run_code` program adapted from `deep-research.run-code.js`; per item it awaits a foreground research child and writes the result:
 
 ```js
-// args
-{
-  topic: "…",
-  batch: [{ name, category, description, slug }],   // one batch per workflow call
-  fieldsText: "<full text of fields.yaml>",
-  maxRounds: 2,      // 1 = single pass, 2 = gap refinement
-  verify: true       // run the QA/verification pass
-}
+const res = await tools.subagent({
+  description: 'research <slug>',
+  prompt,                          // persona + item + fields + output contract
+  run_in_background: false,        // required on the ptc preset (continuable defaults to background)
+})
+const text = (res.output || []).filter((b) => b.type === 'text').map((b) => b.text).join('')
 ```
+
+Legacy (native profile that still exposes the `workflow` tool): call `workflow` with the `deep-research.workflow.js` body, a `meta` block, and `args: { topic, batch, fieldsText, maxRounds: 2, verify: true }`.
 
 ## Search engine
 
-- **Primary — AnySearch (anysearch skill, [anysearch-ai/anysearch-skill](https://github.com/anysearch-ai/anysearch-skill))**: `search` / `batch_search` / `extract`; vertical routing via `get_sub_domains` for academic / finance / legal / health / code / business, etc.
-- **Fallback — DSH `web_search`** (DeepSeek native search): used automatically when the anysearch tools are unavailable in a child's context; each search costs a model turn.
-- Note: the AnySearch free tier has a **daily quota** — when exhausted, children automatically fall back to `web_search` + direct page fetches (verification notes will say so).
+- **Primary — AnySearch** ([anysearch-ai/anysearch-skill](https://github.com/anysearch-ai/anysearch-skill)): MCP tools (`anysearch-search` / `-batch_search` / `-extract`), or the skill's CLI, with vertical routing via `get_sub_domains` for academic / finance / legal / health / code / business, etc.
+- **Fallback — native DSH `web_search` / `web_fetch`** (DeepSeek native search): used automatically when AnySearch is unavailable in a child's context; each search costs a model turn.
+- Note: the AnySearch free tier has a **daily quota** — when exhausted, children fall back to `web_search` + direct page fetches (verification notes will say so).
 
 ## Runtime requirements
 
 - `python3` + PyYAML.
-- `workflow` tool + background subagents (in `dsh-base`). If `workflow` is unavailable, `research-deep` falls back to manual background-subagent batches.
+- Code Mode `run_code` + background subagents (in `dsh-base`). The `ptc` preset disables the `workflow` tool, so `research-deep` uses its `run_code` orchestration; on native presets the `workflow` + `deep-research.workflow.js` path still works, with manual subagent batches as the last fallback.
 - Optional: the [anysearch skill](https://github.com/anysearch-ai/anysearch-skill) (primary engine, see [install](#optional-install-the-anysearch-skill)) and network access to `api.anysearch.com` / `api.deepseek.com`.
 
 ## Files
@@ -194,7 +202,7 @@ Each batch runs the `workflow` tool with `deep-research.workflow.js`:
 - `research/SKILL.md`, `research/validate_json.py`
 - `research-add-items/SKILL.md`
 - `research-add-fields/SKILL.md`
-- `research-deep/SKILL.md`, `research-deep/deep-research.workflow.js`
+- `research-deep/SKILL.md`, `research-deep/deep-research.run-code.js`, `research-deep/deep-research.workflow.js`
 - `research-report/SKILL.md`, `research-report/generate_report.py`
 - `deep-research-agent/SKILL.md`
 
@@ -208,9 +216,11 @@ Setup step 1 to refresh the skills.
 
 | Symptom | Fix |
 |---|---|
+| Bare `write(...)`/`subagent(...)` fails with `unknown tool` | DSH Code Mode: call it as `tools.<name>({...})` inside a `run_code` program |
+| `workflow` tool is unavailable | The `ptc` agent preset disables it — use the `run_code` orchestration (`deep-research.run-code.js`); the `workflow` path is for native presets |
 | Multi-item run dies at ~10 min | Raise `maxWallMs` (Setup step 2); split batches smaller |
-| Children report anysearch quota errors | Wait for quota reset or rely on the `web_search` fallback (already automatic) |
-| `workflow` tool unavailable | Use the manual background-subagent fallback in `research-deep` |
+| Children report anysearch quota errors | Wait for quota reset or rely on the native `web_search` fallback (already automatic) |
+| Foreground `tools.subagent` returns no result | Pass `run_in_background: false`; the `ptc` preset's `continuable` mode defaults to background |
 | Validation fails (missing required fields) | Re-run the failing items (`research-deep` skips completed ones) |
 | Low confidence / conflicts in the report | Expected — that is the verification pass working; re-run flagged items or inspect the conflict notes |
 

@@ -1,5 +1,12 @@
-// DSH workflow script v2: deep-research batch with plan-first method,
-// two-pass gap refinement and optional verification. Consumed by the workflow tool.
+// DSH workflow-tool script (native-preset path) for a deep-research batch:
+// plan-first method, two-pass gap refinement, optional verification.
+//
+// The shipped `ptc` agent preset (Code Mode) DISABLES `tool-workflow`. On that
+// preset orchestrate with `deep-research.run-code.js` instead (run_code +
+// parallel `tools.subagent`). This file remains for native presets (e.g.
+// `standard`) that still expose the `workflow` tool: pass this body as the
+// tool's `script`, a separate `meta` block, and the `args` documented below.
+//
 // No fs/network here — the child agents do the work.
 // args: { topic, batch: [{name, category, description, slug}], fieldsText,
 //         maxRounds?: 1|2 (default 2), verify?: boolean (default false) }
